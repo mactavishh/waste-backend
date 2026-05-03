@@ -15,6 +15,10 @@ with open("labels.txt", "r") as f:
 
 IMG_SIZE = 224
 
+@app.route("/")
+def home():
+    return "Waste classifier backend is running"
+
 @app.route("/predict", methods=["POST"])
 def predict():
     if "image" not in request.files:
