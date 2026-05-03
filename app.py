@@ -30,6 +30,20 @@ def add_cors_headers(response):
 def home():
     return "Waste classifier backend is running"
 
+@app.route("/upload-test", methods=["POST", "OPTIONS"])
+def upload_test():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    image_file = request.files["image"]
+
+    return jsonify({
+        "message": "Upload received",
+        "filename": image_file.filename
+    })
 
 @app.route("/health", methods=["GET"])
 def health():
