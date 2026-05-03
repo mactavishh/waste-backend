@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, make_response
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import tensorflow as tf
 import numpy as np
 from PIL import Image
@@ -8,14 +8,7 @@ import os
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/*": {"origins": "*"}})
-
-@app.after_request
-def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-    return response
+CORS(app, origins="*", allow_headers=["Content-Type", "Authorization"])
 
 model = tf.keras.models.load_model("waste_model.h5", compile=False)
 
@@ -24,16 +17,37 @@ with open("labels.txt", "r") as f:
 
 IMG_SIZE = 224
 
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return response
+
+
 @app.route("/")
 def home():
     return "Waste classifier backend is running"
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "labels": labels
+    })
+
+
 @app.route("/predict", methods=["POST", "OPTIONS"])
+@cross_origin()
 def predict():
     if request.method == "OPTIONS":
         response = make_response()
-        response.status_code = 200
-        return response
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        return response, 200
 
     if "image" not in request.files:
         return jsonify({"error": "No image uploaded"}), 400
